@@ -14,58 +14,78 @@ class SingleLinkList{
     public $head;
     /**
      * 初始化头结点
+     * 根据LeetCode的要求，head指针非空，必须对head赋值
      */
-    public function __construct(){
-        $this->head = new ListNode(null);
+    public function __construct($val = null){
+        if (is_null($val)){
+            echo '必须设置头节点初始化值！';
+            return false;
+        }
+        $val = (array)$val;
+        $this->head = new ListNode($val[0]);
+        unset($val[0]);
+        if(count($val) > 0)
+            $this->insert($val);
     }
     /**
      * 统计链表长度
      */
     public function count(){
         $count = 0;
-        $node = $this->head;
-        while (!is_null($node->next)) {
+        $curNode = $this->head;
+        while (!is_null($curNode)) {
             $count++;
-            $node = $node->next;
+            $curNode = $curNode->next;
         }
         return $count;
     }
     /**
-     * 单链表节点从1开始算起
      * [单链表节点插入]
      * @param  [type] $val [插入的值，可以是一个数组]
-     * @param  [type] $num 插入在第几个节点后[默认尾节点]
      */
-    public function insert($val,$num = null){
+    public function insert($val){
         $val = (array)$val;
-        $node = $this->head;
-        if($num === null){
-            //尾节点插入
-            while ($node->next != null) {
-                $node = $node->next;
-            }
-            foreach ($val as $v) {
-                $newNode = new ListNode($v);
-                $node->next = $newNode;
-                $node = $node->next;
-            }
-        }else{
-            if($num > $this->count() || $num <= 0){
-                echo '插入失败';
-                return false;
-            }
-            for($i = 0;$i<$num-1;++$i){
-                $node = $node->next;
-            }
-            //下一个节点
-            $nextNode = $node->next;
-            foreach ($val as $v) {
-                $newNode = new ListNode($v);
-                $node->next = $newNode;
-                $node = $node->next;
-            }
-            $node->next = $nextNode;
+        $curNode = $this->head;
+        //尾节点插入,下一节点为空，即已到尾节点
+        while ($curNode->next != null) {
+            $curNode = $curNode->next;
         }
+        foreach ($val as $v) {
+            $newNode = new ListNode($v);
+            $curNode->next = $newNode;
+            $curNode = $curNode->next;
+        }
+        return true;
+    }
+    /**
+     * 单链表节点从1开始算起
+     * [单链表节点指定位置插入]
+     * @param  [type] $val [插入的值，可以是一个数组]
+     * @param  [type] $num 插入在第几个节点
+     */
+    public function insertPos($val,$num = 0){
+        if($num > $this->count() || $num <= 0){
+            echo '插入失败';
+            return false;
+        }
+        $val = (array)$val;
+        //为了处理头节点的特殊性，设置一个虚拟的头节点
+        $dummyHead = new ListNode(null);
+        $dummyHead->next = $this->head;
+        $curNode = $dummyHead;
+        for($i = 0;$i<$num-1;++$i){
+            $curNode = $curNode->next;
+        }
+        //下一个节点
+        $nextNode = $curNode->next;
+        foreach ($val as $v) {
+            $newNode = new ListNode($v);
+            $curNode->next = $newNode;
+            $curNode = $curNode->next;
+        }
+        $curNode->next = $nextNode;
+        //重定义类中head属性
+        $this->head = $dummyHead->next;
         return true;
     }
     /**
@@ -92,16 +112,16 @@ class SingleLinkList{
         //遍历链表找节点
         $success = 0; //交换成功次数
         $count = 0;   //计数
-        $node = $this->head;
-        while ($node->next !== null) {
+        $curNode = $this->head;
+        while ($curNode !== null) {
             $count++;
-            $node = $node->next;
             if(isset($kv[$count])){
-                $node->val = $kv[$count];
+                $curNode->val = $kv[$count];
                 unset($kv[$count]);
                 $success++;
                 if($success == $lenv) return true;
             }
+            $curNode = $curNode->next;
         }
         foreach ($kv as $key => $value) {
             echo $key,'号节点',$value,'插入失败<br>';
@@ -113,14 +133,18 @@ class SingleLinkList{
      * [单链表节点删除]
      * @param  [type] $num 删除第几个节点，默认最后一个节点
      */
-    public function delete($num){
+    public function delete($num = 0){
         if($num > $this->count() || $num <= 0) return false;
-        $node = $this->head;
+        //为了处理头节点的特殊性，设置一个虚拟的头节点
+        $dummyHead = new ListNode(null);
+        $dummyHead->next = $this->head;
+        $curNode = $dummyHead;
         //找到删除节点的上一个节点
         for($i = 0;$i<$num-1;++$i){
-            $node = $node->next;
+            $curNode = $curNode->next;
         }
-        $node->next = $node->next->next;
+        $curNode->next = $curNode->next->next;
+        $this->head = $dummyHead->next;
         return true;
     }
     /**
@@ -128,10 +152,10 @@ class SingleLinkList{
      */
     public function show(){
         echo 'head -> ';
-        $node = $this->head;
-        while ($node->next !== null) {
-            $node = $node->next;
-            echo $node->val,' -> ';
+        $curNode = $this->head;
+        while (!is_null($curNode)) {
+            echo $curNode->val,' -> ';
+            $curNode = $curNode->next;
         }
         echo 'end';
     }
@@ -139,39 +163,40 @@ class SingleLinkList{
      * 单链表节点从1开始算起
      * [展示指定位置的节点]
      */
-    public function showSingle($num){
+    public function showSingle($num = 0){
         if($num > $this->count() || $num <= 0) return false;
-        $node = $this->head;
-        for($i=0;$i<$num;++$i){
-            $node = $node->next;
+        $curNode = $this->head;
+        for($i=0;$i<$num-1;++$i){
+            $curNode = $curNode->next;
         }
-        return $node->val;
+        return $curNode->val;
     }
 }
-$p = new SingleLinkList();
+
+$p = new SingleLinkList(['a','b']);
+
 /*********  测试Insert  *************/
 echo '********　　　测试Insert　　　********<br>';
-$p->insert('d');                    //测试尾部插入单值
-$p->insert(['g','i','j','k','l']);  //测试尾部插入数组
-$p->insert('h',3);                  //测试指定位置插入单值
-$p->insert('c',1);                  //测试头节点插入单值
-$p->insert(['e','f'],3);            //测试指定位置插入数组
-$p->insert(['a','b'],1);            //测试头节点插入数组
-//head -> a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> end
+$p->insert('c');                      //测试尾部插入单值
+$p->insert(['d','e','f','g','h']);    //测试尾部插入数组
+$p->insertPos('g',3);                 //测试指定位置插入单值
+$p->insertPos('h',1);                 //测试头节点插入单值
+$p->insertPos(['i','j'],3);           //测试指定位置插入数组
+$p->insertPos(['k','l'],1);           //测试头节点插入数组
 $p->show();
 /*********  测试Count  *************/
 echo '<hr>********　　　测试Count　　　********<br>';
 echo '总长度:',$p->count();
 /*********  测试Update  *************/
 echo '<hr>********　　　测试Update　　　********<br>';
-$p->update('3',3);                  //测试更新单值
-$p->update(['1','2'],[1,2]);        //测试更新数组
-$p->update('13',13);                //测试更新溢出单值
-$p->update(['4','13'],[4,13]);      //测试更新溢出链表长度数组
+$p->update('3',3);                          //测试更新单值
+$p->update(['1','2'],[1,2]);                //测试更新数组
+$p->update('15',15);                        //测试更新溢出单值
+$p->update(['4','15','16'],[4,15,16]);      //测试更新溢出链表长度数组
 $p->show();
 /*********  测试Delete  *************/
 echo '<hr>********　　　测试Delete　　　********<br>';
-$p->delete(12);
+$p->delete(14);
 $p->delete(1);
 $p->show();
 /*********  测试showSingle  *************/
